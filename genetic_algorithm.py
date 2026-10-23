@@ -3,16 +3,16 @@ import numpy as np
 from morphing_udp import udp, NUM_MODE_PARAMETERS
 
 # Genetic Algorithm - ESA Morphing Rovers
-
+ 
 rng = np.random.default_rng(42)
 
-POPULATION_SIZE = 6
-GENERATIONS = 5
+POPULATION_SIZE = 8
+GENERATIONS = 10
 MUTATION_COUNT = 50
 MUTATION_STRENGTH = 0.02
 
-# Marrim konfigurimin me te mire nga Adaptive Hill Climbing
-initial_rover = np.load("adaptive_best_rover.npy").copy()
+# Marrim roverin me te mire nga Genetic Algorithm i kaluar
+initial_rover = np.load("ga_best_rover.npy").copy()
 
 # Ndryshojme vetem parametrat e rrjetit nervor
 # 4 format e roverit dhe 7 parametrat diskrete mbeten te pandryshuar
@@ -22,7 +22,7 @@ mutable_indices = np.arange(
 )
 
 
-# Funksioni per vleresimin e roverit
+# FITNESS - vleresimi i roverit
 def evaluate(rover):
     fitness = float(udp.fitness(rover)[0])
 
@@ -49,7 +49,9 @@ def mutate(rover):
     )
 
     child[indices] = np.clip(
-        child[indices], -100, 100
+        child[indices],
+        -100,
+        100
     )
 
     return child
@@ -70,17 +72,21 @@ def crossover(parent1, parent2):
     return child
 
 
-# Krijimi i popullates fillestare
+# POPULATION - krijimi i popullates fillestare
 initial_fitness = evaluate(initial_rover)
 
 best_rover = initial_rover.copy()
 best_fitness = initial_fitness
 
-population = [(initial_rover.copy(), initial_fitness)]
+population = [
+    (initial_rover.copy(), initial_fitness)
+]
 
 print(f"Fitness fillestar: {initial_fitness:.4f}")
 
+# Krijojme 7 roveret e tjere me mutacione
 for i in range(POPULATION_SIZE - 1):
+
     rover = mutate(initial_rover)
     fitness = evaluate(rover)
 
@@ -90,19 +96,27 @@ for i in range(POPULATION_SIZE - 1):
         best_fitness = fitness
         best_rover = rover.copy()
 
+        print(
+            f"Initial population improvement: "
+            f"{best_fitness:.4f}"
+        )
 
-# Procesi i evolucionit
+
+# GENETIC ALGORITHM - procesi i evolucionit
 for generation in range(GENERATIONS):
 
-    # SELECTION - zgjedhim roveret me te mire
+    # SELECTION - renditja sipas Fitness
     population.sort(key=lambda x: x[1])
 
     # ELITISM - ruajme roverin me te mire
-    new_population = [population[0]]
+    new_population = [
+        (population[0][0].copy(), population[0][1])
+    ]
 
-    # Krijojme pasardhesit
+    # Krijimi i pasardhesve
     while len(new_population) < POPULATION_SIZE:
 
+        # Zgjedhim dy prinderit me te mire
         parent1 = population[0][0]
         parent2 = population[1][0]
 
@@ -117,21 +131,31 @@ for generation in range(GENERATIONS):
 
         new_population.append((child, fitness))
 
+        # Ruajme konfigurimin me te mire
         if fitness < best_fitness:
+
             best_fitness = fitness
             best_rover = child.copy()
 
+            print(
+                f"Improvement found in "
+                f"generation {generation + 1}: "
+                f"{best_fitness:.4f}"
+            )
+
+    # Kalojme ne gjeneraten e ardhshme
     population = new_population
 
     print(
-        f"Generation {generation + 1}: "
+        f"Generation {generation + 1}/{GENERATIONS}: "
         f"Best Fitness = {best_fitness:.4f}"
     )
 
 
-# Ruajme konfigurimin me te mire
-np.save("ga_best_rover.npy", best_rover)
+# Ruajme rezultatin ne fajll te ri
+np.save("ga_best_rover_v2.npy", best_rover)
 
-print("\nGenetic Algorithm completed!")
+print("\nGenetic Algorithm V2 completed!")
 print(f"Initial Fitness: {initial_fitness:.4f}")
 print(f"Best Fitness: {best_fitness:.4f}")
+print("Saved as: ga_best_rover_v2.npy")
