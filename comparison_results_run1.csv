@@ -1,0 +1,4 @@
+Run,Algorithm,Fitness,Optimization Time (s),Evaluations
+1,Hill Climbing,7.935988903045654,122.66,6
+1,Adaptive Hill Climbing,7.420149326324463,134.58,6
+1,Genetic Algorithm,7.844327926635742,134.93,6
