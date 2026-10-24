@@ -126,3 +126,70 @@ showed promising performance.
 
 Further experiments with more independent runs
 are needed for stronger statistical conclusions.
+
+
+## Installation and Usage
+
+### Requirements
+
+- Python 3.11
+- Git
+- Dependencies listed in requirements.txt
+
+### Setup
+
+1. Clone the repository:
+
+   git clone https://github.com/leonorahaxhijaj/Leonora-Haxhijaj-Morphing-Rovers.git
+
+2. Open the project directory:
+
+   cd Leonora-Haxhijaj-Morphing-Rovers
+
+3. Create a virtual environment:
+
+   py -3.11 -m venv .venv
+
+4. Activate it in PowerShell:
+
+   .\.venv\Scripts\Activate.ps1
+
+5. Install the required dependencies:
+
+   python -m pip install -r requirements.txt
+
+### Simulation Data
+
+Download the original Morphing Rovers data from:
+
+https://github.com/esa/SpOC2
+
+Copy the contents of the Morphing Rovers/data
+directory into the project's data/ directory.
+
+The data directory must contain the terrain maps,
+coordinates.txt and example_rover.npy.
+
+The data directory is excluded from Git tracking.
+
+### Running the Project
+
+Test the ESA simulation:
+
+    python test_rover.py
+
+Evaluate the saved rover configurations:
+
+    python evaluate_results.py
+
+Generate the comparison graphs:
+
+    python plot_results.py
+
+Run the algorithm comparison:
+
+    python compare_algorithms.py
+
+Generate the statistical analysis:
+
+    python analyze_comparison.py
