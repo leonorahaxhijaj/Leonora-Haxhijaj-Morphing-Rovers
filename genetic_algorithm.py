@@ -12,7 +12,7 @@ MUTATION_COUNT = 50
 MUTATION_STRENGTH = 0.02
 
 # Marrim roverin me te mire nga Genetic Algorithm i kaluar
-initial_rover = np.load("ga_best_rover.npy").copy()
+initial_rover = np.load("ga_best_rover_run3.npy").copy()
 
 # Ndryshojme vetem parametrat e rrjetit nervor
 # 4 format e roverit dhe 7 parametrat diskrete mbeten te pandryshuar
@@ -153,9 +153,13 @@ for generation in range(GENERATIONS):
 
 
 # Ruajme rezultatin ne fajll te ri
-np.save("ga_best_rover_v2.npy", best_rover)
+if best_fitness < initial_fitness - 1e-8:
+    np.save("ga_best_rover_new.npy", best_rover)
+    print("New best rover saved!")
+else:
+    print("No improvement. No new file saved.")
 
 print("\nGenetic Algorithm V2 completed!")
 print(f"Initial Fitness: {initial_fitness:.4f}")
 print(f"Best Fitness: {best_fitness:.4f}")
-print("Saved as: ga_best_rover_v2.npy")
+print("Best rover file: ga_best_rover_new.npy (if improved)")
