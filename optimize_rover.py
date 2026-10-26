@@ -46,118 +46,173 @@ def hill_climbing():
     print(f"\nFinal Fitness: {best_fitness:.6f}")
 
 
-# ALGORITHM 2 - COORDINATE SEARCH
+# ALGORITHM 2 - ADAPTIVE COORDINATE SEARCH
+
 def coordinate_search():
 
     # Seed i ri per eksperimente te reja
-    rng = np.random.default_rng(2037)
+    rng = np.random.default_rng(2038)
 
-    # Fillojme nga roveri me Fitness 6.612311
-    best_rover = np.load("weights_best_rover.npy").copy()
+    output = "weights_best_rover.npy"
+
+    # Fillojme nga rezultati me i mire
+    best_rover = np.load(output).copy()
     best_fitness = float(udp.fitness(best_rover)[0])
 
+    initial_fitness = best_fitness
+
     lower, upper = udp.get_bounds()
+
     lower = np.asarray(lower, dtype=float)
     upper = np.asarray(upper, dtype=float)
 
-    # Indekset e peshave te rrjetit nervor
+    # Kufijte e peshave te rrjetit nervor
     weight_start = NUM_MODE_PARAMETERS
     weight_end = weight_start + NUM_WEIGHTS
 
-    print("ESA Morphing Rovers - Coordinate Search")
-    print(f"Initial Fitness: {best_fitness:.6f}")
-    print(f"Total Weights: {NUM_WEIGHTS}")
-    print("Selected Weights: 12")
+    num_selected_weights = 12
 
-    # Zgjedhim 12 pesha per t'i testuar
     selected_weights = rng.choice(
         np.arange(weight_start, weight_end),
-        size=12,
+        size=num_selected_weights,
         replace=False
     )
 
     improvements = 0
+    evaluations = 0
 
-    # Testojme secilen nga 12 peshat
+    print("\nESA Morphing Rovers")
+    print("Adaptive Coordinate Search")
+    print("-" * 45)
+
+    print(f"Initial Fitness: {best_fitness:.6f}")
+    print(f"Total Weights: {NUM_WEIGHTS}")
+    print(f"Selected Weights: {num_selected_weights}")
+
+    print("-" * 45)
+
     for i, index in enumerate(selected_weights, 1):
 
+        # Hapi fillestar
         delta = float(
             rng.choice([0.001, 0.005, 0.02])
         )
 
-        # Provojme dy drejtime: - dhe +
-        for direction in [-1, 1]:
+        # Te dy drejtimet duhet te nisen
+        # nga i njejti konfigurim
+        base_rover = best_rover.copy()
 
-            candidate = best_rover.copy()
+        local_best_rover = None
+        local_best_fitness = best_fitness
 
-            candidate[index] += direction * delta
-
-            # Respektojme kufijte e ESA-s
-            candidate[index] = np.clip(
-                candidate[index],
-                lower[index],
-                upper[index]
-            )
-
-            if candidate[index] == best_rover[index]:
-                continue
-
-            # Vleresimi ne 30 skenaret
-            fitness = float(udp.fitness(candidate)[0])
-
-            # Ruajme vetem permiresimet
-            if (
-                np.isfinite(fitness)
-                and fitness < best_fitness - 1e-6
-            ):
-
-                best_fitness = fitness
-                best_rover = candidate.copy()
-                improvements += 1
-
-                print(
-                    f"New improvement found! "
-                    f"Fitness = {best_fitness:.6f}"
-                )
-
-            print(
-                f"Weight {i}/12 | "
-                f"Direction {direction:+d} | "
-                f"Fitness = {fitness:.6f} | "
-                f"Best = {best_fitness:.6f}"
-            )
-
-    # SAVING THE BEST ROVER
-
-    import os
-
-    output = "weights_best_rover.npy"
-
-    saved_fitness = float("inf")
-
-    if os.path.exists(output):
-
-        saved = np.load(output)
-
-        saved_fitness = float(
-            udp.fitness(saved)[0]
+        print(
+            f"\nWeight {i}/{num_selected_weights} "
+            f"| Index = {index}"
         )
 
-    # Mbishkruajme vetem nese eshte me i mire
-    if best_fitness < saved_fitness - 1e-6:
+        # Fillimisht hapi normal,
+        # pastaj hapi 5 here me i vogel
+        steps = [
+            ("Normal", delta),
+            ("Refined", delta / 5)
+        ]
 
-        np.save(output, best_rover)
+        for stage, step in steps:
 
-        print("\nNew best rover saved!")
-        print(f"Saved: {output}")
+            # Nese hapi normal ka gjetur
+            # permiresim, kalojme te pesha tjeter
+            if (
+                stage == "Refined"
+                and local_best_rover is not None
+            ):
+                break
 
-    else:
-        print("\nNo better configuration to save.")
+            for direction in [-1, 1]:
 
-    print("\nCoordinate Search completed!")
-    print(f"Initial Fitness: {saved_fitness:.6f}")
+                candidate = base_rover.copy()
+
+                candidate[index] += direction * step
+
+                # Respektojme kufijte e ESA-s
+                candidate[index] = np.clip(
+                    candidate[index],
+                    lower[index],
+                    upper[index]
+                )
+
+                # Mos vlereso konfigurim identik
+                if candidate[index] == base_rover[index]:
+                    continue
+
+                fitness = float(
+                    udp.fitness(candidate)[0]
+                )
+
+                evaluations += 1
+
+                print(
+                    f"{stage} | "
+                    f"Direction {direction:+d} | "
+                    f"Step = {step:.6f} | "
+                    f"Fitness = {fitness:.6f}"
+                )
+
+                # Mbajme rezultatin me te mire
+                # per kete peshe
+                if (
+                    np.isfinite(fitness)
+                    and fitness < local_best_fitness - 1e-6
+                ):
+
+                    local_best_fitness = fitness
+                    local_best_rover = candidate.copy()
+
+        # Pranojme vetem konfigurimin me te mire,
+        # pasi i kemi krahasuar drejtimet
+        if local_best_rover is not None:
+
+            best_rover = local_best_rover.copy()
+            best_fitness = local_best_fitness
+
+            improvements += 1
+
+            # Ruajme cdo rekord te ri
+            np.save(output, best_rover)
+
+            print(
+                f"NEW BEST FITNESS: "
+                f"{best_fitness:.6f}"
+            )
+
+            print(f"Saved: {output}")
+
+        else:
+
+            print("No improvement for this weight.")
+
+        print(
+            f"Current Best: {best_fitness:.6f}"
+        )
+
+    # FINAL RESULTS
+
+    print("\n" + "=" * 45)
+    print("ADAPTIVE COORDINATE SEARCH COMPLETED")
+    print("=" * 45)
+
+    print(f"Initial Fitness: {initial_fitness:.6f}")
     print(f"Best Fitness: {best_fitness:.6f}")
     print(f"Improvements: {improvements}")
+    print(f"Fitness Evaluations: {evaluations}")
+
+    if improvements > 0:
+
+        print("\nNew best rover saved successfully!")
+
+    else:
+
+        print("\nNo improvement found.")
+        print("Previous best rover preserved.")
 
 
 # SELECT ALGORITHM
