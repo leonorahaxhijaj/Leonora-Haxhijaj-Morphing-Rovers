@@ -215,20 +215,129 @@ def coordinate_search():
         print("Previous best rover preserved.")
 
 
+# ALGORITHM 3 - FOCUSED COORDINATE SEARCH
+
+def focused_coordinate_search():
+
+    output = "weights_best_rover.npy"
+
+    best_rover = np.load(output).copy()
+    best_fitness = float(udp.fitness(best_rover)[0])
+    initial_fitness = best_fitness
+
+    lower, upper = udp.get_bounds()
+    lower = np.asarray(lower, dtype=float)
+    upper = np.asarray(upper, dtype=float)
+
+    # Peshat qe kane dhene permiresime
+    targets = [
+        (3847, 0.0002),
+        (4690, 0.0200),
+        (6364, 0.0040),
+        (14052, 0.0010),
+        (2784, 0.0002)
+    ]
+
+    improvements = 0
+    evaluations = 0
+
+    print("\nESA Morphing Rovers")
+    print("Focused Coordinate Search")
+    print(f"Initial Fitness: {initial_fitness:.6f}")
+    print("-" * 45)
+
+    for i, (index, original_step) in enumerate(targets, 1):
+
+        base_rover = best_rover.copy()
+
+        local_best = best_fitness
+        local_candidate = None
+
+        print(f"\nWeight {i}/5 | Index = {index}")
+
+        # Provojme hapa me madhesi te ndryshme
+        for scale in [0.5, 1.0, 2.0]:
+
+            step = original_step * scale
+
+            # Krahasojme drejtimet nga e njejta baze
+            for direction in [-1, 1]:
+
+                candidate = base_rover.copy()
+
+                candidate[index] = np.clip(
+                    candidate[index] + direction * step,
+                    lower[index],
+                    upper[index]
+                )
+
+                if candidate[index] == base_rover[index]:
+                    continue
+
+                fitness = float(udp.fitness(candidate)[0])
+                evaluations += 1
+
+                print(
+                    f"Step = {step:.6f} | "
+                    f"Direction {direction:+d} | "
+                    f"Fitness = {fitness:.6f}"
+                )
+
+                if (
+                    np.isfinite(fitness)
+                    and fitness < local_best - 1e-6
+                ):
+                    local_best = fitness
+                    local_candidate = candidate.copy()
+
+        if local_candidate is not None:
+
+            best_rover = local_candidate
+            best_fitness = local_best
+            improvements += 1
+
+            # Ruajme vetem konfigurimin me te mire
+            np.save(output, best_rover)
+
+            print(
+                f"NEW BEST FITNESS: {best_fitness:.6f}"
+            )
+            print(f"Saved: {output}")
+
+        else:
+            print("No improvement for this weight.")
+
+    print("\n" + "=" * 45)
+    print("FOCUSED SEARCH COMPLETED")
+    print("=" * 45)
+
+    print(f"Initial Fitness: {initial_fitness:.6f}")
+    print(f"Best Fitness: {best_fitness:.6f}")
+    print(f"Improvements: {improvements}")
+    print(f"Fitness Evaluations: {evaluations}")
+
+    if improvements == 0:
+        print("Previous best rover preserved.")
+    else:
+        print("New best rover saved successfully!")
+
+
+
 # SELECT ALGORITHM
 
 if __name__ == "__main__":
 
     if len(sys.argv) == 2 and sys.argv[1] == "hill":
-
         hill_climbing()
 
     elif len(sys.argv) == 2 and sys.argv[1] == "coordinate":
-
         coordinate_search()
 
-    else:
+    elif len(sys.argv) == 2 and sys.argv[1] == "focused":
+        focused_coordinate_search()
 
+    else:
         print("Usage:")
         print("python optimize_rover.py hill")
         print("python optimize_rover.py coordinate")
+        print("python optimize_rover.py focused")
