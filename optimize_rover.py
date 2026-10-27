@@ -322,6 +322,132 @@ def focused_coordinate_search():
         print("New best rover saved successfully!")
 
 
+# ALGORITHM 4 - SMALL-STEP MORPHOLOGY SEARCH
+
+def morphology_search():
+
+    import os
+    from morphing_udp import (
+        NUMBER_OF_MODES,
+        MASK_SIZE,
+        MASK_CENTRES
+    )
+
+    rng = np.random.default_rng(2041)
+
+    source = "weights_best_rover.npy"
+    output = "morphology_best_rover.npy"
+
+    best_rover = np.load(source).copy()
+    best_fitness = float(udp.fitness(best_rover)[0])
+    initial_fitness = best_fitness
+
+    lower, upper = udp.get_bounds()
+    lower = np.asarray(lower, dtype=float)
+    upper = np.asarray(upper, dtype=float)
+
+    mode_size = MASK_SIZE ** 2
+
+    assert NUM_MODE_PARAMETERS == NUMBER_OF_MODES * mode_size
+
+    # Mbrojme konfigurimin me te mire ekzistues
+    saved_fitness = float("inf")
+
+    if os.path.exists(output):
+        saved_rover = np.load(output)
+        saved_fitness = float(udp.fitness(saved_rover)[0])
+
+    improvements = 0
+    evaluations = 0
+
+    print("\nESA Morphing Rovers")
+    print("Small-Step Morphology Search")
+    print(f"Initial Fitness: {initial_fitness:.6f}")
+    print("-" * 45)
+
+    for mode in range(NUMBER_OF_MODES):
+
+        start = mode * mode_size
+        end = start + mode_size
+
+        indices = [
+            i for i in range(start, end)
+            if i not in MASK_CENTRES
+            and lower[i] < upper[i]
+        ]
+
+        selected = rng.choice(
+            indices,
+            size=3,
+            replace=False
+        )
+
+        print(f"\nMODE {mode + 1}")
+
+        for index in selected:
+
+            base = best_rover.copy()
+            local_best = best_fitness
+            local_candidate = None
+
+            step = float(
+                rng.choice([0.001, 0.005, 0.02])
+            )
+
+            # Testojme te dy drejtimet
+            for direction in [-1, 1]:
+
+                candidate = base.copy()
+
+                candidate[index] = np.clip(
+                    base[index] + direction * step,
+                    lower[index],
+                    upper[index]
+                )
+
+                if candidate[index] == base[index]:
+                    continue
+
+                fitness = float(udp.fitness(candidate)[0])
+                evaluations += 1
+
+                print(
+                    f"Index {index} | "
+                    f"Direction {direction:+d} | "
+                    f"Step {step:.4f} | "
+                    f"Fitness {fitness:.6f}"
+                )
+
+                if (
+                    np.isfinite(fitness)
+                    and fitness < local_best - 1e-6
+                ):
+                    local_best = fitness
+                    local_candidate = candidate.copy()
+
+            if local_candidate is not None:
+
+                best_rover = local_candidate.copy()
+                best_fitness = local_best
+                improvements += 1
+
+                # Ruajme vetem nese tejkalojme
+                # edhe rekordin e ruajtur ne disk
+                if best_fitness < saved_fitness - 1e-6:
+                    np.save(output, best_rover)
+                    saved_fitness = best_fitness
+                    print(f"NEW SAVED FITNESS: {best_fitness:.6f}")
+
+    print("\n" + "=" * 45)
+    print("MORPHOLOGY SEARCH COMPLETED")
+    print("=" * 45)
+
+    print(f"Initial Fitness: {initial_fitness:.6f}")
+    print(f"Best Fitness: {best_fitness:.6f}")
+    print(f"Improvements: {improvements}")
+    print(f"Fitness Evaluations: {evaluations}")
+    print(f"Best Saved Fitness: {saved_fitness:.6f}")
+
 
 # SELECT ALGORITHM
 
