@@ -1,8 +1,14 @@
 
+from pathlib import Path
+
+OUTPUT_PATH = Path("results/genetic_algorithm_trial.npy")
+
+if OUTPUT_PATH.exists():
+    raise SystemExit("Trial result already exists. Nothing overwritten.")
+
+
 import numpy as np
 from morphing_udp import udp, NUM_MODE_PARAMETERS
-
-# Genetic Algorithm - ESA Morphing Rovers
  
 rng = np.random.default_rng(42)
 
@@ -11,18 +17,13 @@ GENERATIONS = 10
 MUTATION_COUNT = 50
 MUTATION_STRENGTH = 0.02
 
-# Marrim roverin me te mire nga Genetic Algorithm i kaluar
-initial_rover = np.load("ga_best_rover_run3.npy").copy()
+initial_rover = np.load("algorithms/seeds/ga_best_rover_run3.npy", allow_pickle=False).copy()
 
-# Ndryshojme vetem parametrat e rrjetit nervor
-# 4 format e roverit dhe 7 parametrat diskrete mbeten te pandryshuar
 mutable_indices = np.arange(
     NUM_MODE_PARAMETERS,
     len(initial_rover) - 7
 )
 
-
-# FITNESS - vleresimi i roverit
 def evaluate(rover):
     fitness = float(udp.fitness(rover)[0])
 
@@ -31,8 +32,6 @@ def evaluate(rover):
 
     return fitness
 
-
-# MUTATION - ndryshimi i disa parametrave
 def mutate(rover):
     child = rover.copy()
 
@@ -56,8 +55,6 @@ def mutate(rover):
 
     return child
 
-
-# CROSSOVER - kombinimi i dy prinderve
 def crossover(parent1, parent2):
     child = parent1.copy()
 
@@ -71,8 +68,6 @@ def crossover(parent1, parent2):
 
     return child
 
-
-# POPULATION - krijimi i popullates fillestare
 initial_fitness = evaluate(initial_rover)
 
 best_rover = initial_rover.copy()
@@ -82,9 +77,8 @@ population = [
     (initial_rover.copy(), initial_fitness)
 ]
 
-print(f"Fitness fillestar: {initial_fitness:.4f}")
+print(f"Initial fitness: {initial_fitness:.4f}")
 
-# Krijojme 7 roveret e tjere me mutacione
 for i in range(POPULATION_SIZE - 1):
 
     rover = mutate(initial_rover)
@@ -102,36 +96,27 @@ for i in range(POPULATION_SIZE - 1):
         )
 
 
-# GENETIC ALGORITHM - procesi i evolucionit
 for generation in range(GENERATIONS):
 
-    # SELECTION - renditja sipas Fitness
     population.sort(key=lambda x: x[1])
 
-    # ELITISM - ruajme roverin me te mire
     new_population = [
         (population[0][0].copy(), population[0][1])
     ]
 
-    # Krijimi i pasardhesve
     while len(new_population) < POPULATION_SIZE:
 
-        # Zgjedhim dy prinderit me te mire
         parent1 = population[0][0]
         parent2 = population[1][0]
 
-        # CROSSOVER
         child = crossover(parent1, parent2)
 
-        # MUTATION
         child = mutate(child)
 
-        # FITNESS
         fitness = evaluate(child)
 
         new_population.append((child, fitness))
 
-        # Ruajme konfigurimin me te mire
         if fitness < best_fitness:
 
             best_fitness = fitness
@@ -143,7 +128,6 @@ for generation in range(GENERATIONS):
                 f"{best_fitness:.4f}"
             )
 
-    # Kalojme ne gjeneraten e ardhshme
     population = new_population
 
     print(
@@ -152,9 +136,9 @@ for generation in range(GENERATIONS):
     )
 
 
-# Ruajme rezultatin ne fajll te ri
 if best_fitness < initial_fitness - 1e-8:
-    np.save("ga_best_rover_new.npy", best_rover)
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    np.save(OUTPUT_PATH, best_rover)
     print("New best rover saved!")
 else:
     print("No improvement. No new file saved.")
@@ -162,4 +146,4 @@ else:
 print("\nGenetic Algorithm V2 completed!")
 print(f"Initial Fitness: {initial_fitness:.4f}")
 print(f"Best Fitness: {best_fitness:.4f}")
-print("Best rover file: ga_best_rover_new.npy (if improved)")
+print(f"Best trial file: {OUTPUT_PATH} (if improved)")
