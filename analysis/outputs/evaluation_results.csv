@@ -1,0 +1,6 @@
+Algorithm,Fitness,Evaluation Time (s)
+Hill Climbing,7.417876720428,21.079397
+Adaptive Hill Climbing,7.374997138977,23.441875
+Genetic Algorithm,6.613618850708,24.846160
+Small-Step Morphology Search,6.482725620270,23.436156
+Parallel Differential Evolution,3.743781805038,26.286303

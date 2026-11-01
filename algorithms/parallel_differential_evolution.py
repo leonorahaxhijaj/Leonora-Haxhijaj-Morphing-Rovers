@@ -1,3 +1,4 @@
+
 import os
 import hashlib
 import numpy as np
@@ -10,16 +11,15 @@ from morphing_udp import (
     MASK_CENTRES,
 )
 
-SOURCE = "multistart_ga_best_rover.npy"
-OUTPUT = "multistart_ga_v4_best_rover.npy"
-
+SOURCE = "algorithms/seeds/multistart_ga_best_rover.npy"
+OUTPUT = "results/parallel_de_trial.npy"
 
 POP_SIZE = 40
 GENERATIONS = 100
-CR = 0.8  
-F = 0.65  
+CR = 0.8
+F = 0.65
 RANDOM_SEED = 2048
-MAX_WORKERS = os.cpu_count()  
+MAX_WORKERS = os.cpu_count()
 
 def _evaluate_worker(candidate):
     return float(udp.fitness(candidate)[0])
@@ -33,6 +33,8 @@ def main():
         )
     if not os.path.isfile(SOURCE):
         raise SystemExit(f"Source rover not found: {SOURCE}")
+
+    os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
 
     lower, upper = udp.get_bounds()
     lower = np.asarray(lower, dtype=float)
@@ -66,7 +68,7 @@ def main():
     initial_fitness = float(udp.fitness(best)[0])
     if not np.isfinite(initial_fitness):
         raise SystemExit("The source rover has non-finite fitness.")
-    
+
     best_fitness = initial_fitness
     fitness_cache[hashlib.sha256(best.tobytes()).digest()] = best_fitness
     evaluations += 1
@@ -76,7 +78,7 @@ def main():
 
     def evaluate_batch(candidates, executor):
         nonlocal evaluations, cache_hits
-        
+
         results = [None] * len(candidates)
         to_eval_indices = []
         to_eval_candidates = []
@@ -85,7 +87,7 @@ def main():
             if not valid(cand):
                 results[idx] = float("inf")
                 continue
-            
+
             key = get_cache_key(cand)
             if key in fitness_cache:
                 results[idx] = fitness_cache[key]
@@ -97,7 +99,7 @@ def main():
         if to_eval_candidates:
             chunk_size = max(1, len(to_eval_candidates) // MAX_WORKERS)
             eval_results = list(executor.map(_evaluate_worker, to_eval_candidates, chunksize=chunk_size))
-            
+
             for idx, cand, fit in zip(to_eval_indices, to_eval_candidates, eval_results):
                 fit_val = fit if np.isfinite(fit) else float("inf")
                 key = get_cache_key(cand)
@@ -108,28 +110,27 @@ def main():
         return results
 
     def mutate_de(pop, target_idx, best_idx):
-        """Strategjia Differential Evolution (DE/best/1/bin)."""
         pop_len = len(pop)
         available = [i for i in range(pop_len) if i != target_idx]
         r1, r2 = rng.choice(available, size=2, replace=False)
-        
+
         x_best = pop[best_idx]
         x_1 = pop[r1]
         x_2 = pop[r2]
-        
+
         mutant = x_best + F * (x_1 - x_2)
-        
+
         dim = len(x_best)
         cross_mask = rng.random(dim) < CR
         j_rand = rng.integers(0, dim)
-        cross_mask[j_rand] = True  
-        
+        cross_mask[j_rand] = True
+
         trial = np.where(cross_mask, mutant, pop[target_idx])
-        
+
         for c in centers:
             if c < len(trial):
                 trial[c] = pop[target_idx][c]
-                
+
         return np.clip(trial, lower, upper)
 
     print("\nROVER OPTIMIZATION WITH DIFFERENTIAL EVOLUTION (DE) & PARALLELISM")
@@ -152,7 +153,7 @@ def main():
     try:
         with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
             pop_fitness = evaluate_batch(population, executor)
-            
+
             best_idx = int(np.argmin(pop_fitness))
             if pop_fitness[best_idx] < best_fitness - 1e-6:
                 best_fitness = pop_fitness[best_idx]
@@ -163,19 +164,19 @@ def main():
                 for i in range(POP_SIZE):
                     trial = mutate_de(population, i, best_idx)
                     trial_pop.append(trial)
-                
+
                 trial_fitness = evaluate_batch(trial_pop, executor)
-                
+
                 for i in range(POP_SIZE):
                     if trial_fitness[i] <= pop_fitness[i]:
                         population[i] = trial_pop[i]
                         pop_fitness[i] = trial_fitness[i]
-                        
+
                         if trial_fitness[i] < best_fitness - 1e-6:
                             best_fitness = trial_fitness[i]
                             best = trial_pop[i].copy()
                             improvements += 1
-                            
+
                             tmp = OUTPUT + ".tmp.npy"
                             np.save(tmp, best)
                             os.replace(tmp, OUTPUT)
@@ -210,6 +211,6 @@ def main():
         print(f"Saved Output File : {OUTPUT}")
     else:
         print("No improvement. No new file saved.")
-        
+
 if __name__ == "__main__":
     main()

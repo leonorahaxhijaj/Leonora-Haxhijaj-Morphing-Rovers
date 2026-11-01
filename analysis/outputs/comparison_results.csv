@@ -1,0 +1,6 @@
+Rank,Algorithm,Fitness,Gap to Best (%)
+1,Parallel Differential Evolution,3.743781805038,0.0000
+2,Small-Step Morphology Search,6.482725620270,73.1598
+3,Genetic Algorithm,6.613618850708,76.6561
+4,Adaptive Hill Climbing,7.374997138977,96.9932
+5,Hill Climbing,7.417876720428,98.1386
