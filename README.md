@@ -1,195 +1,130 @@
-# Leonora-Haxhijaj-Morphing-Rovers
 
-## Project Overview
+# ESA Morphing Rovers
 
-This project is based on the ESA SpOC 2 - Morphing Rovers challenge.
+This project explores five optimization algorithms for the **ESA SpOC 2 – Morphing Rovers** challenge.
 
-The objective is to optimize a rover that can switch between four different configurations while navigating different terrains.
+The goal is to find a rover configuration that travels efficiently across different terrains and collects samples. The ESA simulator tests the same rover on **30 scenarios across 6 maps**. Each rover has **4 movement modes** controlled by a neural network.
 
-The rover is controlled by a neural network, and its performance is evaluated using a fitness function.
+## Algorithms
 
-## Technologies
+The project includes five methods:
 
-- Python 3.11
-- NumPy
-- PyTorch
-- TorchVision
-- Matplotlib
-- ImageIO
+1. **Hill Climbing** – makes small random changes to improve a rover.
+2. **Adaptive Hill Climbing** – adjusts the size of those changes during the search.
+3. **Genetic Algorithm** – uses a population, mutation and crossover.
+4. **Small-Step Morphology Search** – improves the rover's terrain-mode parameters.
+5. **Parallel Differential Evolution** – searches with a population and evaluates candidates in parallel.
 
-## Implemented Features
+The Python scripts are in `algorithms/`. 
 
-- ESA rover simulation
-- Single-scenario testing
-- Evaluation across 30 scenarios
-- Random Mutation / Hill Climbing optimization
-- Saving the best rover configuration
+## Results
 
-## Initial Results
+All five saved rovers were evaluated with the ESA simulator on the full 30-scenario setup. **Lower fitness is better.**
 
-| Experiment | Fitness |
-|------------|---------|
-| ESA baseline | 7.9848 |
-| Optimized rover | 7.4179 |
+| Rank | Algorithm | Fitness |
+|---|---|---:|
+| 1 | **Parallel Differential Evolution** | **3.743782** |
+| 2 | Small-Step Morphology Search | 6.482726 |
+| 3 | Genetic Algorithm | 6.613619 |
+| 4 | Adaptive Hill Climbing | 7.374997 |
+| 5 | Hill Climbing | 7.417877 |
 
-Improvement: 7.10%
+The best saved rover is `final_results/multistart_ga_v4_best_rover.npy`.
 
-Lower fitness values indicate better performance.
+These numbers compare the **saved final rover configurations**, not the average performance of each algorithm over repeated runs.
 
-## Data
+## Comparison Charts
 
-The simulation requires six terrain maps, coordinates.txt,
-and example_rover.npy in the data/ directory.
+**Fitness comparison** (lower is better):
 
-These files are available from the original ESA SpOC2
-repository under Morphing Rovers/data.
+![Fitness comparison](analysis/outputs/fitness_comparison.png)
 
-## Acknowledgements
+**Improvement compared with Hill Climbing:**
 
-The original challenge, simulation code, and datasets
-were developed by the European Space Agency (ESA).
+![Fitness improvement](analysis/outputs/comparison_summary.png)
 
-Original repository:
-https://github.com/esa/SpOC2
+**Time to evaluate each saved rover:**
 
-The optimization experiments and scripts in this
-repository are part of this project's development.
+![Evaluation time](analysis/outputs/evaluation_time.png)
 
+*Evaluation time is for one complete ESA fitness evaluation, not the total time spent optimizing.*
 
-## Final Optimization Results
+CSV data is available in `analysis/outputs/`.
 
-The ESA SpOC 2 - Morphing Rovers project evaluates
-different optimization techniques for improving rover
-performance across 30 simulation scenarios.
+## Rover Visualizations
 
-The following configurations were obtained through
-successive optimization experiments:
+These images show the **best saved rover** in the ESA simulator.
 
-| Configuration | Fitness |
-|---------------|---------|
-| ESA Baseline | 7.9848 |
-| Hill Climbing | 7.4179 |
-| Adaptive Hill Climbing | 7.3750 |
-| Genetic Algorithm V1 | 7.3147 |
-| Genetic Algorithm V2 | 7.2203 |
-| Best Recovered GA Rover | 6.7131 |
+**Rover modes**
 
-The best configuration achieved a 15.93% reduction
-in fitness compared to the original ESA baseline.
+![Rover modes](results/rover_modes.png)
 
-Lower fitness values indicate better performance.
+**Rover trajectories**
 
-## Algorithm Comparison
+![Rover trajectories](results/rover_trajectories.png)
 
-Three optimization methods were also compared
-using the same initial ESA rover and six fitness
-evaluations per algorithm in each run.
+**Rover mode changes**
 
-Each algorithm was tested with three random seeds.
+![Rover mode changes](results/rover_mode_changes.png)
 
-| Algorithm | Average Fitness | Standard Deviation |
-|-----------|-----------------|--------------------|
-| Hill Climbing | 7.8001 | 0.1948 |
-| Adaptive Hill Climbing | 7.5074 | 0.3113 |
-| Genetic Algorithm | 7.3336 | 0.5735 |
+**Rover mode efficiency**
 
-Genetic Algorithm achieved the lowest average
-fitness in these experiments, although its
-results showed greater variability.
+![Rover mode efficiency](results/rover_mode_efficiency.png)
 
-The comparison is preliminary because only
-three independent runs were performed.
+## Project Structure
 
-## Results and Visualizations
+```text
+algorithms/             Five optimization scripts and seeds/
+analysis/               Scripts for evaluation and comparison
+analysis/outputs/       CSV results and comparison charts
+final_results/          Five saved best rover configurations (.npy)
+results/                Rover visualization images
+data/                   ESA maps and coordinates (local only)
+morphing_udp.py         ESA simulation code
+test_rover.py           Basic simulator test
+morphing_description.md ESA challenge description
+requirements.txt       Python dependencies
+README.md              Project documentation
+```
 
-The repository includes:
+## How to Run
 
-- evaluation_results.csv
-- comparison_results.csv
-- comparison_summary.csv
-- fitness_comparison.png
-- evaluation_time.png
-- comparison_summary.png
+Use **Python 3.11**. In Windows PowerShell, from the project folder:
 
-The best recovered rover configuration is saved
-as ga_best_rover_run3.npy.
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
 
-## Conclusion
+The ESA input data must be placed in `data/` (`Maps/`, `coordinates.txt`, and `example_rover.npy`).
 
-The experiments demonstrate that optimization
-methods can improve the rover's simulated
-performance compared to the ESA baseline.
+This folder is not included in GitHub. See `morphing_description.md` for the challenge data information.
 
-Genetic Algorithm produced the best observed
-solution, while Adaptive Hill Climbing also
-showed promising performance.
+If the CPU-specific PyTorch packages cannot be installed directly, use the [official PyTorch installation instructions](https://pytorch.org/get-started/locally/).
 
-Further experiments with more independent runs
-are needed for stronger statistical conclusions.
+To test and recreate the comparison charts:
 
+```powershell
+python test_rover.py
+python -m analysis.evaluate_results
+python -m analysis.compare_algorithms
+python -m analysis.analyze_comparison
+python -m analysis.plot_results
+```
 
-## Installation and Usage
+To verify the saved morphology refinement without starting a new optimization:
 
-### Requirements
+```powershell
+python -m algorithms.small_step_morphology --verify
+```
 
-- Python 3.11
-- Git
-- Dependencies listed in requirements.txt
+Full optimization runs can take much longer. The saved `.npy` configurations in `final_results/` are kept separate from new trial files.
 
-### Setup
+## Credits
 
-1. Clone the repository:
+The challenge description and simulation code are provided by the **European Space Agency (ESA), Advanced Concepts Team**, for the **SpOC 2 – Morphing Rovers** challenge.
 
-   git clone https://github.com/leonorahaxhijaj/Leonora-Haxhijaj-Morphing-Rovers.git
+The optimization methods and comparison scripts are the work in this repository.
 
-2. Open the project directory:
-
-   cd Leonora-Haxhijaj-Morphing-Rovers
-
-3. Create a virtual environment:
-
-   py -3.11 -m venv .venv
-
-4. Activate it in PowerShell:
-
-   .\.venv\Scripts\Activate.ps1
-
-5. Install the required dependencies:
-
-   python -m pip install -r requirements.txt
-
-### Simulation Data
-
-Download the original Morphing Rovers data from:
-
-https://github.com/esa/SpOC2
-
-Copy the contents of the Morphing Rovers/data
-directory into the project's data/ directory.
-
-The data directory must contain the terrain maps,
-coordinates.txt and example_rover.npy.
-
-The data directory is excluded from Git tracking.
-
-### Running the Project
-
-Test the ESA simulation:
-
-    python test_rover.py
-
-Evaluate the saved rover configurations:
-
-    python evaluate_results.py
-
-Generate the comparison graphs:
-
-    python plot_results.py
-
-Run the algorithm comparison:
-
-    python compare_algorithms.py
-
-Generate the statistical analysis:
-
-    python analyze_comparison.py
+Challenge resources: [ESA SpOC2 GitHub](https://github.com/esa/SpOC2).
