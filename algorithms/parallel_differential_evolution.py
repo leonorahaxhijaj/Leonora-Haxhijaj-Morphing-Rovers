@@ -40,6 +40,8 @@ def main():
     lower = np.asarray(lower, dtype=float)
     upper = np.asarray(upper, dtype=float)
 
+    integer_count = int(udp.get_nix())
+
     best = np.load(SOURCE, allow_pickle=False).copy()
 
     def valid(x):
@@ -48,6 +50,7 @@ def main():
             and x.shape == lower.shape == upper.shape
             and np.all(np.isfinite(x))
             and np.all((x >= lower) & (x <= upper))
+            and np.array_equal(x[-integer_count:], np.trunc(x[-integer_count:]))
         )
 
     if not valid(best):
@@ -131,7 +134,9 @@ def main():
             if c < len(trial):
                 trial[c] = pop[target_idx][c]
 
-        return np.clip(trial, lower, upper)
+        trial = np.clip(trial, lower, upper)
+        trial[-integer_count:] = np.trunc(trial[-integer_count:])
+        return trial
 
     print("\nROVER OPTIMIZATION WITH DIFFERENTIAL EVOLUTION (DE) & PARALLELISM")
     print("=" * 64)
@@ -144,6 +149,7 @@ def main():
     for _ in range(POP_SIZE - 1):
         noise = rng.normal(0, 0.005, size=len(best))
         ind = np.clip(best + noise, lower, upper)
+        ind[-integer_count:] = np.trunc(ind[-integer_count:])
         for c in centers:
             if c < len(ind):
                 ind[c] = best[c]
