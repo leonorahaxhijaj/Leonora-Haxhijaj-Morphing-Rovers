@@ -686,7 +686,11 @@ class MysteriousMars():
                                 col-VIEW_LEFT:col+VIEW_RIGHT]
         
         # Correctly rotate the terrain the rover is standing on
-        rotated_slice = rotate(hmap_slice.unsqueeze(0), angle, InterpolationMode.BILINEAR).squeeze(0)
+        rotated_slice = rotate(
+    hmap_slice.unsqueeze(0),
+    float(angle),
+    InterpolationMode.BILINEAR,
+).squeeze(0)
         
         # Both rover view and mode view are normalised by subtracting the central terrain height
         rover_view = (hmap_slice - hmap_slice[VIEW_LEFT,VIEW_LEFT])/255.
